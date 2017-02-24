@@ -86,14 +86,24 @@ class ScalarTimeSeries(TimeSeries):
             print "Loaded %d data points ranging from %s to %s" % (
                 len(EMP.data), EMP.period_names[0], EMP.period_names[-1])
 
+    def __str__(self):
+        if len(self.data) == 0:
+            samples = "empty"
+        elif len(self.data) < 10:
+            samples = ", ".join(self.data)
+        else:
+            samples = ", ".join(self.data[:3]) + "..." + ", ".join(self.data[-3:])
+        return "(scalar) [%d: %s]" % (len(self.data), samples)
+
 class DerivedTimeSeries(TimeSeries):
     def __init__(self):
-        self.equation = ""
+        self.equation = "UNDEFINED"
 
     def set_equation(self, equation):
         self.equation = ""
 
-
+    def __str__(self):
+        return "(derived) " + self.equation
 
 if __name__ == "__main__":
     EMP = ScalarTimeSeries("EMP")
