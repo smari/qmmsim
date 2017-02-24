@@ -1,8 +1,47 @@
 import csv
 
-class Variable:
+
+class Node:
+    pass
+
+class Sum(Node):
+    def __init__(self, left, right):
+        self.left = left
+        self.right = right
+
+class Sub(Node):
+    def __init__(self, left, right):
+        self.left = left
+        self.right = right
+
+class Mul(Node):
+    def __init__(self, left, right):
+        self.left = left
+        self.right = right
+
+class Div(Node):
+    def __init__(self, left, right):
+        self.left = left
+        self.right = right
+
+class Reference(Node):
+    def __init__(self, name, t):
+        self.refer_to = name
+        self.time_offset = t
+
+class Variable(Node):
     def __init__(self):
         pass
+
+    def get_value(self, t):
+        return self.value
+
+class Constant(Variable):
+    def __init__(self):
+        self.value = None
+
+    def update(self, val):
+        self.value = val
 
 class Coefficient(Variable):
     def __init__(self):

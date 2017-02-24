@@ -1,0 +1,10 @@
+ADDSYM
+COEFFICIENT PI,
+ENDOGENOUS FIB Floop,
+EXOGENOUS OneToTen,
+;
+
+PI = 3.14159265,
+FIB: FIB = FIB(-1) + FIB(-2),
+Floop: Floop = FIB + (OneToTen*PI),
+;

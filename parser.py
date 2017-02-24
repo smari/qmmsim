@@ -6,7 +6,7 @@ from pyparsing import Word, alphas, ParseException, Literal, CaselessLiteral, \
                       StringEnd, alphanums, cppStyleComment
 import math
 
-from timeseries import DerivedTimeSeries, ScalarTimeSeries, TimeSeries
+from timeseries import Sum, Sub, Mul, Div, Reference, Coefficient, DerivedTimeSeries, ScalarTimeSeries, TimeSeries
 
 class AbaqusParser:
     def __init__(self, simulation):
@@ -37,17 +37,17 @@ class AbaqusParser:
                                Optional( e + integer )
                              )
 
-        plus  = Literal( "+" )
-        minus = Literal( "-" )
-        mult  = Literal( "*" )
-        div   = Literal( "/" )
+        plus  = Literal("+")
+        minus = Literal("-")
+        mult  = Literal("*")
+        div   = Literal("/")
         # NOTE(smari): We don't really want to suppress these though...
-        lpar  = Literal( "(" ).suppress()
-        rpar  = Literal( ")" ).suppress()
+        lpar  = Literal("(").suppress()
+        rpar  = Literal(")").suppress()
         addop  = plus | minus
         multop = mult | div
-        expop = Literal( "^" )
-        assign = Literal( "=" )
+        expop = Literal("^")
+        assign = Literal("=")
         declare = Literal(":")
 
         # NOTE(smari):
@@ -58,7 +58,8 @@ class AbaqusParser:
 
         # NOTE(smari): It appears that mathematical operations can be done
         # on both sides of a definition expression, such as:
-        #   CJ: CJ/GDPN = A.CJ + B.CJ*(CJ(-1)/GDPN(-1)) + C.CJ*GAPAV + Q1.CJ*Q1 #                   + Q2.CJ*Q2 + Q3.CJ*Q3 + D091.CJ*D091 + R_CJ,
+        #   CJ: CJ/GDPN = A.CJ + B.CJ*(CJ(-1)/GDPN(-1)) + C.CJ*GAPAV + Q1.CJ*Q1
+        #                   + Q2.CJ*Q2 + Q3.CJ*Q3 + D091.CJ*D091 + R_CJ,
         # ... which explains the distinction between declaring and defining.
         expr = Forward()
         atom = (
@@ -74,9 +75,17 @@ class AbaqusParser:
                 (multop + factor).setParseAction(self.push_first))
 
         expr << term + ZeroOrMore(
-                (addop + term).setParseAction(self.push_first) ) + Literal(",")
+                (addop + term).setParseAction(self.push_first) ) + Literal(",").suppress()
 
-        expression = Optional(ident + declare) + Optional((ident + assign).setParseAction(self.assign_var)) + expr
+        coefficient_set_value = (ident + assign + expr).setParseAction(self.define_coefficient)
+        timeseries_define = (ident + declare + ident + assign + expr).setParseAction(self.define_timeseries)
+
+        expression = timeseries_define | coefficient_set_value
+
+        #expression = ( Optional(ident + declare) +
+        #               Optional((ident + assign).setParseAction(self.assign_var)) +
+        #               expr
+        #             )
 
         # TODO(smari): Use these declarations as initializers for coefficients
         #              or time series in the simulation.
@@ -92,7 +101,7 @@ class AbaqusParser:
                 Literal("EXOGENOUS") |
                 Literal("COEFFICIENT")
             )   + ZeroOrMore(ident)
-                + Optional(Literal(","))
+                + Optional(Literal(",")).suppress()
             ).setParseAction(self.declare_variable)
 
         # Junk that we're ignoring for now... it's probably super important!
@@ -110,6 +119,7 @@ class AbaqusParser:
     def parse(self, string):
         try:
             L = self.pattern.parseString(string)
+            print "Parsed: ", L
         except ParseException,err:
             self.simulation.error = "Parse error: %s" % (string.strip())
             self.simulation.error_details = err
@@ -132,6 +142,7 @@ class AbaqusParser:
     def complexident_handle(self, str, loc, toks):
         print "Complex identifier!!"
         print str, loc, toks
+
 
     def declare_variable(self, str, loc, toks):
         var_type = toks[0]
@@ -158,10 +169,19 @@ class AbaqusParser:
 
 
     def push_first(self, str, loc, toks):
+        print "Pushing %s of %s" % (toks[0], toks)
+        print self.expr_stack
         self.expr_stack.append(toks[0])
 
     def assign_var(self, str, loc, toks):
         self.var_stack.append(toks[0])
+
+    def define_timeseries(self, str, loc, toks):
+        print "Defining timeseries %s" % toks
+
+    def define_coefficient(self, str, loc, toks):
+        print "Defining coefficient %s" % toks
+        self.simulation.set_value(toks[0], toks[1:])
 
     def evaluate_stack(self, stack):
         # NOTE(smari): This is stupid and should die.
@@ -179,12 +199,12 @@ class AbaqusParser:
         if op in "+-*/^":
             op2 = self.evaluate_stack(stack)
             op1 = self.evaluate_stack(stack)
-            return opn[op](op1, op2)
+            return self.opn[op](op1, op2)
         elif isinstance(op, TimeSeries):
-            return op # TODO: Danger! Danger! This is infinite loop inducing!
+            return "VAR" # op # TODO: Danger! Danger! This is infinite loop inducing!
         elif re.search('^[a-zA-Z][a-zA-Z0-9_]*$',op):
             if self.simulation.has_var(op):
-                return self.simulation.get_var(op)
+                return str(self.simulation.get_var(op))
             else:
                 return 0
         elif re.search('^[-+]?[0-9]+$',op):

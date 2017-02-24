@@ -50,8 +50,11 @@ class Simulation:
         if self.error_details:
             print "                     ",
             print " "*(self.error_details.column-1) + "----^"
+            print self.error_details
 
         print "Environment consisted of:"
         print "   %4d coefficients." % len(self.coefficients)
         print "   %4d time series." % len(self.time_series)
         print "   Parsed %d input files." % len(self.input_files)
+        print self.coefficients.keys()
+        print self.time_series.keys()
