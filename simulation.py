@@ -56,5 +56,9 @@ class Simulation:
         print "   %4d coefficients." % len(self.coefficients)
         print "   %4d time series." % len(self.time_series)
         print "   Parsed %d input files." % len(self.input_files)
-        print self.coefficients.keys()
-        print self.time_series.keys()
+        print "Coefficients:"
+        for k, v in self.coefficients.iteritems():
+            print "%20s = %s" % (k, v)
+        print "Time series:"
+        for k, v in self.time_series.iteritems():
+            print "%20s = %s" % (k, v)

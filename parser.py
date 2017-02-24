@@ -119,7 +119,6 @@ class AbaqusParser:
     def parse(self, string):
         try:
             L = self.pattern.parseString(string)
-            print "Parsed: ", L
         except ParseException,err:
             self.simulation.error = "Parse error: %s" % (string.strip())
             self.simulation.error_details = err
@@ -181,7 +180,7 @@ class AbaqusParser:
 
     def define_coefficient(self, str, loc, toks):
         print "Defining coefficient %s" % toks
-        self.simulation.set_value(toks[0], toks[1:])
+        self.simulation.set_value(toks[0], toks[2])
 
     def evaluate_stack(self, stack):
         # NOTE(smari): This is stupid and should die.
