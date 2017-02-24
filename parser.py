@@ -174,7 +174,7 @@ class AbaqusParser:
                      "/" : ( lambda a,b: a / b ),
                      "^" : ( lambda a,b: a ** b ) }
 
-        if (len(s) == 0): return
+        if (len(stack) == 0): return
         op = stack.pop()
         if op in "+-*/^":
             op2 = self.evaluate_stack(stack)
@@ -194,7 +194,11 @@ class AbaqusParser:
 
     def parse_file(self, filename):
         self.simulation.input_files.append(filename)
-        file_handle = open(filename, "r")
+        try:
+            file_handle = open(filename, "r")
+        except IOError, e:
+            self.simulation.error = "Could not open %s: %s" % (filename, e)
+            return False
         lineno = 0
         for line in file_handle:
             lineno += 1
