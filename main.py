@@ -6,13 +6,26 @@ See README.md for details.
 """
 
 import click
-
+import csv
 from simulation import Simulation
 from parser import AbaqusParser
 
 @click.command()
-def cli():
-    simulation = Simulation()
+@click.argument("database", type=click.File())
+def cli(database):
+    if database.name[-3:] != "csv":
+        print "We only know how to handle CSV databases for now."
+        return False
+
+    reader = csv.DictReader(database)
+    db = {}
+    for row in reader:
+        for k, v in row.iteritems():
+            if not k in db:
+                db[k] = []
+            db[k].append(v)
+
+    simulation = Simulation(db)
     parser = AbaqusParser(simulation)
     parser.debug = True
     #res = parser.parse_file("sedlabanki/qmm_likan_desember_2015.inp")

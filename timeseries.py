@@ -70,6 +70,9 @@ class ScalarTimeSeries(TimeSeries):
         # be considered to start at 0.
         self.data_starts_at = 0
 
+    def update(self, val):
+        self.set_data(val)
+
     def set_data(self, data):
         self.data = data
 
@@ -92,7 +95,7 @@ class ScalarTimeSeries(TimeSeries):
         elif len(self.data) < 10:
             samples = ", ".join(self.data)
         else:
-            samples = ", ".join(self.data[:3]) + "..." + ", ".join(self.data[-3:])
+            samples = ", ".join(self.data[:3]) + " ... " + ", ".join(self.data[-3:])
         return "(scalar) [%d: %s]" % (len(self.data), samples)
 
 class DerivedTimeSeries(TimeSeries):

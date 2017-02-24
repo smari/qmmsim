@@ -147,8 +147,7 @@ class AbaqusParser:
         var_type = toks[0]
         if var_type == "EXOGENOUS":
             for tok in toks[1:]:
-                ts = ScalarTimeSeries()
-                res = self.simulation.add_time_series(tok, ts)
+                res = self.simulation.add_time_series_from_database(tok)
                 if not res:
                     return False
         elif var_type == "ENDOGENOUS":

@@ -1,12 +1,13 @@
-from timeseries import Coefficient
+from timeseries import Coefficient, ScalarTimeSeries
 
 class Simulation:
-    def __init__(self):
+    def __init__(self, database):
         self.time_series = {}
         self.coefficients = {}
         self.error = None
         self.error_details = None
         self.input_files = []
+        self.database = database
 
     def add_time_series(self, name, ts):
         self.time_series[name] = ts
@@ -15,6 +16,11 @@ class Simulation:
         #              time series all line up properly.
         # self.adjust_time_series()
         return True
+
+    def add_time_series_from_database(self, name):
+        ts = ScalarTimeSeries()
+        ts.update(self.database[name])
+        self.time_series[name] = ts
 
     def add_coefficient(self, name):
         self.coefficients[name] = Coefficient()
