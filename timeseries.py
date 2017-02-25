@@ -17,15 +17,24 @@ class Sub(Node):
         self.left = left
         self.right = right
 
+    def __repr__(self):
+        return "%s - %s" % (str(self.left), str(self.right))
+
 class Mul(Node):
     def __init__(self, left, right):
         self.left = left
         self.right = right
 
+    def __repr__(self):
+        return "%s * %s" % (str(self.left), str(self.right))
+
 class Div(Node):
     def __init__(self, left, right):
         self.left = left
         self.right = right
+
+    def __repr__(self):
+        return "%s * %s" % (str(self.left), str(self.right))
 
 class Reference(Node):
     def __init__(self, name, t):
@@ -104,7 +113,7 @@ class ScalarTimeSeries(TimeSeries):
     def eval(self, time):
         starttime = self.data_starts_at
         endtime = len(self.data)+self.data_starts_at
-        if time > starttime and time < endtime;
+        if time > starttime and time < endtime:
             return self.data[time-starttime]
         else:
             return 0
