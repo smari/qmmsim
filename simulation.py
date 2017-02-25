@@ -18,9 +18,10 @@ class Simulation:
         return True
 
     def add_time_series_from_database(self, name):
-        ts = ScalarTimeSeries()
-        ts.update(self.database[name])
-        self.time_series[name] = ts
+        if name in self.database:
+            ts = ScalarTimeSeries()
+            ts.update(self.database[name])
+            self.time_series[name] = ts
 
     def add_coefficient(self, name):
         self.coefficients[name] = Coefficient()
