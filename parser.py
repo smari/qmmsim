@@ -45,6 +45,7 @@ class AbaqusParser:
         rpar  = Literal(")").suppress()
         addop  = plus | minus
         multop = mult | div
+        multop.setName("multop")
         expop = Literal("^")
         assign = Literal("=").suppress()
         declare = Literal(":").suppress()
@@ -52,8 +53,8 @@ class AbaqusParser:
         # NOTE(smari):
         # Identifiers in the model often contain periods. It is unclear if
         # the periods mean anything in particular.
-        ident = Word(alphas,alphanums + '_' + '.')
-        complexident = (ident + lpar + integer + rpar) #.setParseAction(self.complexident_handle)
+        ident = Word(alphas, alphanums + '_' + '.')
+        ident_subscript = (ident + lpar + integer + rpar) #.setParseAction(self.ident_subscript_handle)
 
         # NOTE(smari): It appears that mathematical operations can be done
         # on both sides of a definition expression, such as:
@@ -61,9 +62,10 @@ class AbaqusParser:
         #                   + Q2.CJ*Q2 + Q3.CJ*Q3 + D091.CJ*D091 + R_CJ,
         # ... which explains the distinction between declaring and defining.
         atom = (
-                (complexident | ident).setParseAction(self.add_ref) |
+                (ident_subscript | ident).setParseAction(self.add_ref) |
                 (floatnumber | integer).setParseAction(self.add_const)
                )
+        atom.setName("atom")
 
         #factor = Forward()
         #factor << (atom + ZeroOrMore(
@@ -71,16 +73,22 @@ class AbaqusParser:
         expr = Forward()
         term = Forward()
 
+        def termfail(s, loc, expr, err):
+            print "ERROR: %s / %s " % (expr, err)
+            print "Failed on term '%s' at %s" % (s.strip(), loc)
+            print '               ' + ' '*loc + '^'
+
         term << (
-                 atom |
-                 (atom + multop + (expr|atom)).setParseAction(self.add_term)
+                 (atom + multop + term).setParseAction(self.add_term).setFailAction(termfail) |
+                 atom
                 )
+        term.setName("term")
 
         expr << (
-                 (term + addop + (expr|term)).setParseAction(self.add_expr) |
-                 term |
-                 (lpar + expr + rpar)
-                ).setName("atom or addition")
+                 (term + addop + expr).setParseAction(self.add_expr) |
+                 term
+                )
+        expr.setName("expr")
 
         coefficient_set_value = ((ident + assign + expr)
             .setParseAction(self.define_coefficient)
@@ -126,7 +134,8 @@ class AbaqusParser:
             Literal("ADDEQ BOTTOM")
             ).setName("ignore").setParseAction(lambda x: None)
 
-        self.pattern = (expression | declaration | ignore | cppStyleComment) + StringEnd()
+        self.pattern = (expression | declaration | ignore) + StringEnd()
+        self.pattern.ignore(cppStyleComment)
 
     def parse(self, string):
         try:
@@ -223,7 +232,7 @@ class AbaqusParser:
             lineno += 1
             if line.strip() == "":
                 continue
-            res = self.parse(line)
+            res = self.parse(line.strip())
             if not res:
                 print "Error at %s:%d" % (filename, lineno)
                 return False
