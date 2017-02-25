@@ -69,14 +69,15 @@ class AbaqusParser:
         #factor << (atom + ZeroOrMore(
         #        (expop + factor)).setParseAction(self.add_factor))
         expr = Forward()
+        term = Forward()
 
-        term = (
-                (atom + multop + (expr|atom)).setParseAction(self.add_term) |
-                 atom
-               )
+        term << (
+                 atom |
+                 (atom + multop + (expr|atom)).setParseAction(self.add_term)
+                )
 
         expr << (
-                (term + addop + (expr|term)).setParseAction(self.add_expr) |
+                 (term + addop + (expr|term)).setParseAction(self.add_expr) |
                  term |
                  (lpar + expr + rpar)
                 ).setName("atom or addition")
@@ -158,7 +159,6 @@ class AbaqusParser:
             op = Sum(left, right)
         else:
             op = Sub(left, right)
-        print "Found expr: ", op
         return op
 
     def add_ref(self, str, loc, toks):
@@ -166,7 +166,6 @@ class AbaqusParser:
         #              define time offset; perhaps it would be good to support.
         # TODO(smari): Currently we don't check if the identifier exists and
         #              is a time series type.
-        print "Found reference to %s[%s]" % (toks[0], toks[1])
         ref = Reference(toks[0], int(toks[1]))
         return ref
 
@@ -211,35 +210,6 @@ class AbaqusParser:
 
     def define_coefficient(self, str, loc, toks):
         self.simulation.set_value(toks[0], toks[1])
-
-    def evaluate_stack(self, stack):
-        # NOTE(smari): This is stupid and should die.
-        # Specifically, this was a nice testing function for initial parsing
-        # but once we started to get good results, it didn't make much sense
-        # any more.
-        self.opn = { "+" : ( lambda a,b: a + b ),
-                     "-" : ( lambda a,b: a - b ),
-                     "*" : ( lambda a,b: a * b ),
-                     "/" : ( lambda a,b: a / b ),
-                     "^" : ( lambda a,b: a ** b ) }
-
-        if (len(stack) == 0): return
-        op = stack.pop()
-        if op in "+-*/^":
-            op2 = self.evaluate_stack(stack)
-            op1 = self.evaluate_stack(stack)
-            return self.opn[op](op1, op2)
-        elif isinstance(op, TimeSeries):
-            return "VAR" # op # TODO: Danger! Danger! This is infinite loop inducing!
-        elif re.search('^[a-zA-Z][a-zA-Z0-9_]*$',op):
-            if self.simulation.has_var(op):
-                return str(self.simulation.get_var(op))
-            else:
-                return 0
-        elif re.search('^[-+]?[0-9]+$',op):
-            return long( op )
-        else:
-            return float( op )
 
     def parse_file(self, filename):
         self.simulation.input_files.append(filename)
