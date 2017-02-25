@@ -40,7 +40,10 @@ def cli(database):
     res = parser.parse_file("test/test.inp")
     if not res:
         simulation.handle_errors()
-        return False
+        #return False
+
+    print "PI(440) = ", simulation.get_value('PI', 440)
+    print "OneToTen(4) = ", simulation.get_value('OneToTen', 4)
 
 
 if __name__=="__main__":
