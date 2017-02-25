@@ -79,9 +79,10 @@ This tree could then be evaluated as needed.
 
  * [ ] Allow loading data from multiple data sources (#NiceToHave)
  * [ ] Think about coherent structure for error reporting
- * [ ] Make internal tree structure for expressions
- * [ ] Allow for lazy/non-blocking evaluation of statements
- * [ ] Make evaluator that resolves equations at certain time indexes
+ * [X] Make internal tree structure for expressions
+ * [X] Allow for lazy/non-blocking evaluation of statements
+ * [X] Make evaluator that resolves equations at certain time indexes
+ * [ ] Guarantee that evaluator doesn't recurse infinitely
  * [ ] Make something that shows the values over time (#Graphics)
 
 ## Author
