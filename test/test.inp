@@ -1,13 +1,16 @@
 ADDSYM
 COEFFICIENT PI,
-ENDOGENOUS FIB Mul1 Mul2 NOTFIB MOO,
+ENDOGENOUS FIB AddAndMul Mul1 Mul2 NOTFIB MOO AddWithParen MulWithParen,
 EXOGENOUS OneToTen,
 ;
 
 PI = 3.14159265,
 MOO: MOO = 50,
-FIB: FIB = FIB(-1) + FIB(-2),
-NOTFIB: NOTFIB = NOTFIB(-1) + FIB(-2) + NOTFIB(-3),
+FIB: FIB = FIB(-1) + FIB(-2), /* Not really Fibonnacci either */
+NOTFIB: NOTFIB = NOTFIB(-1) + FIB(-2) + NOTFIB(-3), /* Not Fibonnaci! */
+AddWithParen: AddWithParen = AddWithParen(-1) + (AddWithParen(-2) + PI)
+AddAndMul: AddAndMul = Mul1 + MOO*PI,
+MulWithParen: MulWithParen = AddWithParen(-1) + (AddWithParen(-2) * PI)
 Mul1: Mul1 = OneToTen*PI,
 Mul2: Mul2 = FIB + (OneToTen*PI),
 ;
