@@ -44,6 +44,7 @@ class AbaqusParser:
         lpar  = Literal("(").suppress()
         rpar  = Literal(")").suppress()
         addop  = plus | minus
+        addop.setName("addop")
         multop = mult | div
         multop.setName("multop")
         expop = Literal("^")
@@ -79,24 +80,27 @@ class AbaqusParser:
             print '               ' + ' '*loc + '^'
 
         term << (
-                 (atom + multop + term).setParseAction(self.add_term).setFailAction(termfail) |
+                 (atom + multop + term).setParseAction(self.add_term) |
                  atom
                 )
         term.setName("term")
+        term.setFailAction(termfail)
 
         expr << (
+                 (lpar + expr + rpar) |
                  (term + addop + expr).setParseAction(self.add_expr) |
                  term
                 )
         expr.setName("expr")
+        expr.setFailAction(termfail)
 
         coefficient_set_value = ((ident + assign + expr)
             .setParseAction(self.define_coefficient)
-            .setName("coefficient definition"))
+            .setName("def(coefficient)"))
 
         timeseries_define = (
                 ident + declare + ident + assign + expr
-            ).setParseAction(self.define_timeseries).setName("time series definition")
+            ).setParseAction(self.define_timeseries).setName("def(time series)")
 
         expression = ((coefficient_set_value | timeseries_define) +
                       Literal(",").suppress())
@@ -132,7 +136,7 @@ class AbaqusParser:
             Literal("ADDSYM") |
             Literal("filemod cbiq;") |
             Literal("ADDEQ BOTTOM")
-            ).setName("ignore").setParseAction(lambda x: None)
+            ).setName("ignore").suppress()
 
         self.pattern = (expression | declaration | ignore) + StringEnd()
         self.pattern.ignore(cppStyleComment)
