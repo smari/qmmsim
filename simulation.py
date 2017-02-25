@@ -37,12 +37,13 @@ class Simulation:
             return False
         return True
 
-    def get_var(self, name):
+    def get_value(self, name, time):
         if name in self.coefficients:
+            # Coefficients are timeless!
             return self.coefficients[name]
 
         if name in self.time_series:
-            return self.time_series[name]
+            return self.time_series[name].evaluate(time)
 
         self.error = "Variable %s does not exist." % name
         return False
