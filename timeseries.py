@@ -9,6 +9,11 @@ class Sum(Node):
         self.left = left
         self.right = right
 
+    def evaluate(self, time):
+        print self.left, self.left.evaluate(time)
+        print self.right, self.right.evaluate(time)
+        return self.left.evaluate(time) + self.right.evaluate(time)
+
     def __repr__(self):
         # return "%s + %s" % (str(self.left), str(self.right))
         return "(+ %s %s)" % (str(self.left), str(self.right))
@@ -41,9 +46,19 @@ class Div(Node):
         return "(/ %s %s)" % (str(self.left), str(self.right))
 
 class Reference(Node):
-    def __init__(self, name, t):
+    def __init__(self, name, var, t):
         self.refer_to = name
+        self.ref = var
+        # print "Referring to", var
         self.time_offset = t
+
+    def evaluate(self, time):
+        if time < 0:
+            return Constant(0)
+        if time > 100:
+            return Constant(0)
+        t = self.time_offset+time
+        return self.ref.evaluate(t)
 
     def __repr__(self):
         return "%s[%s]" % (self.refer_to, self.time_offset)
@@ -52,15 +67,15 @@ class Variable(Node):
     def __init__(self):
         pass
 
-    def get_value(self, t):
-        return self.value
-
 class Constant(Variable):
     def __init__(self, val=None):
         self.value = val
 
     def update(self, val):
         self.value = val
+
+    def evaluate(self, time):
+        return self.value
 
     def __str__(self):
         return str(self.value)
@@ -79,11 +94,6 @@ class TimeSeries(Variable):
     def __init__(self):
         pass
 
-    def extrema(self):
-        return min(self.data), max(self.data)
-
-    def update(self, val):
-        print "Updating: %s" % (val)
 
 class ScalarTimeSeries(TimeSeries):
     def __init__(self):
@@ -141,7 +151,7 @@ class DerivedTimeSeries(TimeSeries):
 
     def evaluate(self, time):
         # TODO(smari): Actually evaluate
-        return 0
+        return self.equation.evaluate(time)
 
     def __str__(self):
         return str(self.equation)
