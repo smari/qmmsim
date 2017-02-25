@@ -42,9 +42,14 @@ def cli(database):
         simulation.handle_errors()
         #return False
 
-    print "PI(440) = ", simulation.get_value('PI', 440)
-    print "OneToTen(4) = ", simulation.get_value('OneToTen', 4)
-
+    print
+    print "# Evaluations"
+    print " - PI(440) = ", simulation.get_value('PI', 440)
+    print " - OneToTen(4) = ", simulation.get_value('OneToTen', 4)
+    #print " - FIB(1) = ", simulation.get_value('FIB', 1)
+    #print " - FIB(2) = ", simulation.get_value('FIB', 2)
+    #print " - FIB(3) = ", simulation.get_value('FIB', 3)
+    #print " - FIB(4) = ", simulation.get_value('FIB', 4)
 
 if __name__=="__main__":
     cli()
