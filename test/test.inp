@@ -1,10 +1,13 @@
 ADDSYM
 COEFFICIENT PI,
-ENDOGENOUS FIB Floop,
+ENDOGENOUS FIB Mul1 Mul2 NOTFIB MOO,
 EXOGENOUS OneToTen,
 ;
 
 PI = 3.14159265,
+MOO: MOO = 50,
 FIB: FIB = FIB(-1) + FIB(-2),
-Floop: Floop = FIB + (OneToTen*PI),
+NOTFIB: NOTFIB = NOTFIB(-1) + FIB(-2) + NOTFIB(-3),
+Mul1: Mul1 = OneToTen*PI,
+Mul2: Mul2 = FIB + (OneToTen*PI),
 ;

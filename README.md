@@ -77,11 +77,12 @@ This tree could then be evaluated as needed.
 
 ## TODO
 
+ * [ ] Allow loading data from multiple data sources (#NiceToHave)
  * [ ] Think about coherent structure for error reporting
  * [ ] Make internal tree structure for expressions
  * [ ] Allow for lazy/non-blocking evaluation of statements
  * [ ] Make evaluator that resolves equations at certain time indexes
- * [ ] Make something that shows the values over time (graphics!)
+ * [ ] Make something that shows the values over time (#Graphics)
 
 ## Author
 

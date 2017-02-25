@@ -6,7 +6,7 @@ from pyparsing import Word, alphas, ParseException, Literal, CaselessLiteral, \
                       StringEnd, alphanums, cppStyleComment
 import math
 
-from timeseries import Sum, Sub, Mul, Div, Reference, Coefficient, DerivedTimeSeries, ScalarTimeSeries, TimeSeries
+from timeseries import Sum, Sub, Mul, Div, Reference, Coefficient, DerivedTimeSeries, ScalarTimeSeries, TimeSeries, Constant
 
 class AbaqusParser:
     def __init__(self, simulation):
@@ -41,46 +41,57 @@ class AbaqusParser:
         minus = Literal("-")
         mult  = Literal("*")
         div   = Literal("/")
-        # NOTE(smari): We don't really want to suppress these though...
         lpar  = Literal("(").suppress()
         rpar  = Literal(")").suppress()
         addop  = plus | minus
         multop = mult | div
         expop = Literal("^")
-        assign = Literal("=")
-        declare = Literal(":")
+        assign = Literal("=").suppress()
+        declare = Literal(":").suppress()
 
         # NOTE(smari):
         # Identifiers in the model often contain periods. It is unclear if
         # the periods mean anything in particular.
         ident = Word(alphas,alphanums + '_' + '.')
-        complexident = (ident + '(' + integer + ')').setParseAction(self.complexident_handle)
+        complexident = (ident + lpar + integer + rpar) #.setParseAction(self.complexident_handle)
 
         # NOTE(smari): It appears that mathematical operations can be done
         # on both sides of a definition expression, such as:
         #   CJ: CJ/GDPN = A.CJ + B.CJ*(CJ(-1)/GDPN(-1)) + C.CJ*GAPAV + Q1.CJ*Q1
         #                   + Q2.CJ*Q2 + Q3.CJ*Q3 + D091.CJ*D091 + R_CJ,
         # ... which explains the distinction between declaring and defining.
-        expr = Forward()
         atom = (
-                (floatnumber | integer | complexident | ident).setParseAction(self.push_first) |
-                (lpar + expr.suppress() + rpar)
+                (complexident | ident).setParseAction(self.add_ref) |
+                (floatnumber | integer).setParseAction(self.add_const)
                )
 
-        factor = Forward()
-        factor << atom + ZeroOrMore(
-                (expop + factor).setParseAction(self.push_first))
+        #factor = Forward()
+        #factor << (atom + ZeroOrMore(
+        #        (expop + factor)).setParseAction(self.add_factor))
+        expr = Forward()
 
-        term = factor + ZeroOrMore(
-                (multop + factor).setParseAction(self.push_first))
+        term = (
+                (atom + multop + (expr|atom)).setParseAction(self.add_term) |
+                 atom
+               )
 
-        expr << term + ZeroOrMore(
-                (addop + term).setParseAction(self.push_first) ) + Literal(",").suppress()
+        expr << (
+                (term + addop + (expr|term)).setParseAction(self.add_expr) |
+                 term |
+                 (lpar + expr + rpar)
+                ).setName("atom or addition")
 
-        coefficient_set_value = (ident + assign + expr).setParseAction(self.define_coefficient)
-        timeseries_define = (ident + declare + ident + assign + expr).setParseAction(self.define_timeseries)
+        coefficient_set_value = ((ident + assign + expr)
+            .setParseAction(self.define_coefficient)
+            .setName("coefficient definition"))
 
-        expression = timeseries_define | coefficient_set_value
+        timeseries_define = (
+                ident + declare + ident + assign + expr
+            ).setParseAction(self.define_timeseries).setName("time series definition")
+
+        expression = ((coefficient_set_value | timeseries_define) +
+                      Literal(",").suppress())
+        expression.setName("expression")
 
         #expression = ( Optional(ident + declare) +
         #               Optional((ident + assign).setParseAction(self.assign_var)) +
@@ -102,7 +113,7 @@ class AbaqusParser:
                 Literal("COEFFICIENT")
             )   + ZeroOrMore(ident)
                 + Optional(Literal(",")).suppress()
-            ).setParseAction(self.declare_variable)
+            ).setParseAction(self.declare_variable).setName("declaration")
 
         # Junk that we're ignoring for now... it's probably super important!
         ignore = (
@@ -112,7 +123,7 @@ class AbaqusParser:
             Literal("ADDSYM") |
             Literal("filemod cbiq;") |
             Literal("ADDEQ BOTTOM")
-            ).setParseAction(lambda x: None)
+            ).setName("ignore").setParseAction(lambda x: None)
 
         self.pattern = (expression | declaration | ignore | cppStyleComment) + StringEnd()
 
@@ -124,23 +135,44 @@ class AbaqusParser:
             self.simulation.error_details = err
             return False
 
-        # if self.debug: print "expr_stack=", self.expr_stack
-
-        # calculate result , store a copy in ans , display the result to user
-        result = self.evaluate_stack(self.expr_stack)
-
-        # Assign result to a variable if required
-        # if self.debug: print "var=",self.var_stack
-        if len(self.var_stack)==1:
-            res = self.simulation.set_value(self.var_stack[0], result)
-            if not res:
-                return False
-
         return True
 
-    def complexident_handle(self, str, loc, toks):
-        print "Complex identifier!!"
-        print str, loc, toks
+    #def add_factor(self, str, loc, toks):
+    #    print "Found factor: ", toks
+    #    return self.push_first(str, loc, toks)
+
+    def add_term(self, str, loc, toks):
+        right = toks[2]
+        left = toks[0]
+        if toks[1] == '*':
+            op = Mul(left, right)
+        else:
+            op = Div(left, right)
+        print "Found term: ", op
+        return op
+
+    def add_expr(self, str, loc, toks):
+        right = toks[2]
+        left = toks[0]
+        if toks[1] == '+':
+            op = Sum(left, right)
+        else:
+            op = Sub(left, right)
+        print "Found expr: ", op
+        return op
+
+    def add_ref(self, str, loc, toks):
+        # TODO(smari): This currently does not accept variable references to
+        #              define time offset; perhaps it would be good to support.
+        # TODO(smari): Currently we don't check if the identifier exists and
+        #              is a time series type.
+        print "Found reference to %s[%s]" % (toks[0], toks[1])
+        ref = Reference(toks[0], int(toks[1]))
+        return ref
+
+    def add_const(self, str, loc, toks):
+        const = Constant(toks[0])
+        return const
 
 
     def declare_variable(self, str, loc, toks):
@@ -168,18 +200,17 @@ class AbaqusParser:
 
     def push_first(self, str, loc, toks):
         print "Pushing %s of %s" % (toks[0], toks)
-        print self.expr_stack
         self.expr_stack.append(toks[0])
 
     def assign_var(self, str, loc, toks):
         self.var_stack.append(toks[0])
 
     def define_timeseries(self, str, loc, toks):
-        print "Defining timeseries %s" % toks
+        # TODO(smari): This is currently ignoring the left hand side!
+        self.simulation.set_value(toks[0], toks[2])
 
     def define_coefficient(self, str, loc, toks):
-        print "Defining coefficient %s" % toks
-        self.simulation.set_value(toks[0], toks[2])
+        self.simulation.set_value(toks[0], toks[1])
 
     def evaluate_stack(self, stack):
         # NOTE(smari): This is stupid and should die.

@@ -9,6 +9,9 @@ class Sum(Node):
         self.left = left
         self.right = right
 
+    def __repr__(self):
+        return "%s + %s" % (str(self.left), str(self.right))
+
 class Sub(Node):
     def __init__(self, left, right):
         self.left = left
@@ -29,6 +32,9 @@ class Reference(Node):
         self.refer_to = name
         self.time_offset = t
 
+    def __repr__(self):
+        return "%s[%s]" % (self.refer_to, self.time_offset)
+
 class Variable(Node):
     def __init__(self):
         pass
@@ -37,11 +43,14 @@ class Variable(Node):
         return self.value
 
 class Constant(Variable):
-    def __init__(self):
-        self.value = None
+    def __init__(self, val=None):
+        self.value = val
 
     def update(self, val):
         self.value = val
+
+    def __str__(self):
+        return str(self.value)
 
 class Coefficient(Variable):
     def __init__(self):
@@ -49,6 +58,9 @@ class Coefficient(Variable):
 
     def update(self, val):
         self.value = val
+
+    def __str__(self):
+        return str(self.value)
 
 class TimeSeries(Variable):
     def __init__(self):
@@ -89,6 +101,14 @@ class ScalarTimeSeries(TimeSeries):
             print "Loaded %d data points ranging from %s to %s" % (
                 len(EMP.data), EMP.period_names[0], EMP.period_names[-1])
 
+    def eval(self, time):
+        starttime = self.data_starts_at
+        endtime = len(self.data)+self.data_starts_at
+        if time > starttime and time < endtime;
+            return self.data[time-starttime]
+        else:
+            return 0
+
     def __str__(self):
         if len(self.data) == 0:
             samples = "empty"
@@ -98,15 +118,16 @@ class ScalarTimeSeries(TimeSeries):
             samples = ", ".join(self.data[:3]) + " ... " + ", ".join(self.data[-3:])
         return "(scalar) [%d: %s]" % (len(self.data), samples)
 
+
 class DerivedTimeSeries(TimeSeries):
     def __init__(self):
         self.equation = "UNDEFINED"
 
-    def set_equation(self, equation):
-        self.equation = ""
+    def update(self, val):
+        self.equation = val
 
     def __str__(self):
-        return "(derived) " + self.equation
+        return "(derived) " + str(self.equation)
 
 if __name__ == "__main__":
     EMP = ScalarTimeSeries("EMP")
