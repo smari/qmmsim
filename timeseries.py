@@ -10,7 +10,8 @@ class Sum(Node):
         self.right = right
 
     def __repr__(self):
-        return "%s + %s" % (str(self.left), str(self.right))
+        # return "%s + %s" % (str(self.left), str(self.right))
+        return "(+ %s %s)" % (str(self.left), str(self.right))
 
 class Sub(Node):
     def __init__(self, left, right):
@@ -18,7 +19,8 @@ class Sub(Node):
         self.right = right
 
     def __repr__(self):
-        return "%s - %s" % (str(self.left), str(self.right))
+        #return "%s - %s" % (str(self.left), str(self.right))
+        return "(- %s %s)" % (str(self.left), str(self.right))
 
 class Mul(Node):
     def __init__(self, left, right):
@@ -26,7 +28,8 @@ class Mul(Node):
         self.right = right
 
     def __repr__(self):
-        return "%s * %s" % (str(self.left), str(self.right))
+        #return "%s * %s" % (str(self.left), str(self.right))
+        return "(* %s %s)" % (str(self.left), str(self.right))
 
 class Div(Node):
     def __init__(self, left, right):
@@ -34,7 +37,8 @@ class Div(Node):
         self.right = right
 
     def __repr__(self):
-        return "%s * %s" % (str(self.left), str(self.right))
+        #return "%s / %s" % (str(self.left), str(self.right))
+        return "(/ %s %s)" % (str(self.left), str(self.right))
 
 class Reference(Node):
     def __init__(self, name, t):
@@ -110,7 +114,7 @@ class ScalarTimeSeries(TimeSeries):
             print "Loaded %d data points ranging from %s to %s" % (
                 len(EMP.data), EMP.period_names[0], EMP.period_names[-1])
 
-    def eval(self, time):
+    def evaluate(self, time):
         starttime = self.data_starts_at
         endtime = len(self.data)+self.data_starts_at
         if time > starttime and time < endtime:
@@ -125,7 +129,7 @@ class ScalarTimeSeries(TimeSeries):
             samples = ", ".join(self.data)
         else:
             samples = ", ".join(self.data[:3]) + " ... " + ", ".join(self.data[-3:])
-        return "(scalar) [%d: %s]" % (len(self.data), samples)
+        return "[%d: %s]" % (len(self.data), samples)
 
 
 class DerivedTimeSeries(TimeSeries):
@@ -135,8 +139,12 @@ class DerivedTimeSeries(TimeSeries):
     def update(self, val):
         self.equation = val
 
+    def evaluate(self, time):
+        # TODO(smari): Actually evaluate
+        return 0
+
     def __str__(self):
-        return "(derived) " + str(self.equation)
+        return str(self.equation)
 
 if __name__ == "__main__":
     EMP = ScalarTimeSeries("EMP")
