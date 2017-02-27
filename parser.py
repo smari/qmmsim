@@ -3,7 +3,8 @@ from __future__ import division
 import re
 from pyparsing import Word, alphas, ParseException, Literal, CaselessLiteral, \
                       Combine, Optional, nums, Or, Forward, ZeroOrMore, \
-                      StringEnd, alphanums, cppStyleComment
+                      StringEnd, alphanums, cppStyleComment, \
+                      oneOf, Group
 import math
 
 from timeseries import Sum, Sub, Mul, Div, Reference, Coefficient, DerivedTimeSeries, ScalarTimeSeries, TimeSeries, Constant
@@ -45,8 +46,9 @@ class AbaqusParser:
         rpar  = Literal(")").suppress()
         addop  = plus | minus
         addop.setName("addop")
-        multop = mult | div
-        multop.setName("multop")
+        mulop = mult | div
+        mulop.setName("multop")
+        op = addop | mulop
         expop = Literal("^")
         assign = Literal("=").suppress()
         declare = Literal(":").suppress()
@@ -62,6 +64,9 @@ class AbaqusParser:
         #   CJ: CJ/GDPN = A.CJ + B.CJ*(CJ(-1)/GDPN(-1)) + C.CJ*GAPAV + Q1.CJ*Q1
         #                   + Q2.CJ*Q2 + Q3.CJ*Q3 + D091.CJ*D091 + R_CJ,
         # ... which explains the distinction between declaring and defining.
+        expr = Forward()
+        term = Forward()
+
         atom = (
                 (ident_subscript | ident).setParseAction(self.add_ref) |
                 (floatnumber | integer).setParseAction(self.add_const)
@@ -71,28 +76,25 @@ class AbaqusParser:
         #factor = Forward()
         #factor << (atom + ZeroOrMore(
         #        (expop + factor)).setParseAction(self.add_factor))
-        expr = Forward()
-        term = Forward()
 
         def termfail(s, loc, expr, err):
             print "ERROR: %s / %s " % (expr, err)
             print "Failed on term '%s' at %s" % (s.strip(), loc)
             print '               ' + ' '*loc + '^'
 
-        term << (
-                 (atom + multop + term).setParseAction(self.add_term) |
-                 atom
-                )
-        term.setName("term")
-        term.setFailAction(termfail)
+        term = (
+            atom |
+            (atom + mulop + expr) |
+            (lpar + expr + rpar)
+        )
 
         expr << (
-                 (lpar + expr + rpar) |
-                 (term + addop + expr).setParseAction(self.add_expr) |
-                 term
+                (term + ZeroOrMore(addop + expr)).setParseAction(self.add_expr) |
+                (lpar + expr + rpar)
                 )
         expr.setName("expr")
         expr.setFailAction(termfail)
+
 
         coefficient_set_value = ((ident + assign + expr)
             .setParseAction(self.define_coefficient)
@@ -151,35 +153,35 @@ class AbaqusParser:
 
         return True
 
-    #def add_factor(self, str, loc, toks):
-    #    print "Found factor: ", toks
-    #    return self.push_first(str, loc, toks)
+    def add_expr(self, s, loc, toks):
+        if len(toks) == 1:
+            print s, loc, toks
+            return toks[0]
 
-    def add_term(self, str, loc, toks):
         right = toks[2]
         left = toks[0]
         if toks[1] == '*':
             op = Mul(left, right)
-        else:
+        elif toks[1] == '/':
             op = Div(left, right)
-        print "Found term: ", op
-        return op
-
-    def add_expr(self, str, loc, toks):
-        right = toks[2]
-        left = toks[0]
-        if toks[1] == '+':
+        elif toks[1] == '+':
             op = Sum(left, right)
         else:
             op = Sub(left, right)
+
+        print "Found term: ", op
         return op
+
 
     def add_ref(self, str, loc, toks):
         # TODO(smari): This currently does not accept variable references to
         #              define time offset; perhaps it would be good to support.
         # TODO(smari): Currently we don't check if the identifier exists and
         #              is a time series type.
-        ref = Reference(toks[0], int(toks[1]))
+        varname = toks[0]
+        var = self.simulation.get_var(varname)
+        time_offset = toks[1]
+        ref = Reference(varname, var, int(time_offset))
         return ref
 
     def add_const(self, str, loc, toks):
