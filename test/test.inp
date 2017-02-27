@@ -8,11 +8,11 @@ PI = 3.14159265,
 MOO: MOO = 50,
 FIB: FIB = FIB(-1) + FIB(-2), /* Not really Fibonnacci either */
 NOTFIB: NOTFIB = NOTFIB(-1) + FIB(-2) + NOTFIB(-3), /* Not Fibonnaci! */
-A: A = A(-3) + B + (C + D) + ((E+F)+G) + H
+A: A = A(-3) + B + (C + D) + ((E+F)+G) + H,
 AddWithParen: AddWithParen = AddWithParen(-1) + (AddWithParen(-2) + PI),
 AddWithParenRev: AddWithParenRev = (AddWithParen(-1) + PI(-1)) + AddWithParen(-2),
 AddAndMul: AddAndMul = Mul1 + MOO*PI,
-MulWithParen: MulWithParen = AddWithParen(-1) + (AddWithParen(-2) * PI)
+MulWithParen: MulWithParen = AddWithParen(-1) + (AddWithParen(-2) * PI),
 Mul1: Mul1 = OneToTen*PI,
 Mul2: Mul2 = FIB + (OneToTen*PI),
 ;

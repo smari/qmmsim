@@ -156,7 +156,6 @@ class AbaqusParser:
 
     def add_expr(self, s, loc, toks):
         if len(toks) == 1:
-            print s, loc, toks
             return toks[0]
 
         right = toks[2]
@@ -170,7 +169,6 @@ class AbaqusParser:
         else:
             op = Sub(left, right)
 
-        print "Found term: ", op
         return op
 
 
