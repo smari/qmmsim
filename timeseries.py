@@ -80,6 +80,9 @@ class Constant(Variable):
     def __str__(self):
         return str(self.value)
 
+    def __repr__(self):
+        return str(self.value)
+
 class Coefficient(Variable):
     def __init__(self):
         self.value = None
