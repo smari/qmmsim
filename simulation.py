@@ -18,10 +18,10 @@ class Simulation:
         return True
 
     def add_time_series_from_database(self, name):
+        ts = ScalarTimeSeries()
         if name in self.database:
-            ts = ScalarTimeSeries()
             ts.update(self.database[name])
-            self.time_series[name] = ts
+        self.time_series[name] = ts
 
     def add_coefficient(self, name):
         self.coefficients[name] = Coefficient()
@@ -71,13 +71,21 @@ class Simulation:
             print " "*(self.error_details.column-1) + "----^"
             print self.error_details
 
+        undef_ts = 0
+        for _,ts in self.time_series.iteritems():
+            if str(ts) == "UNDEFINED":
+                undef_ts += 1
+
+        undef_ts_pc = float(undef_ts)/len(self.time_series)
+
         print "Environment consisted of:"
         print "   %4d coefficients." % len(self.coefficients)
         print "   %4d time series." % len(self.time_series)
+        print "   %4d undefined time series (%d%%)" % (undef_ts, undef_ts_pc)
         print "   Parsed %d input files." % len(self.input_files)
-        print "Coefficients:"
-        for k, v in self.coefficients.iteritems():
-            print "%20s = %s" % (k, v)
-        print "Time series:"
-        for k, v in self.time_series.iteritems():
-            print "%20s = %s" % (k, v)
+        #print "Coefficients:"
+        #for k, v in self.coefficients.iteritems():
+        #    print "%20s = %s" % (k, v)
+        #print "Time series:"
+        #for k, v in self.time_series.iteritems():
+        #    print "%20s = %s" % (k, v)

@@ -141,7 +141,7 @@ class AbaqusParser:
             Literal("ADDEQ BOTTOM")
             ).setName("ignore").suppress()
 
-        self.pattern = (expression | declaration | ignore) + StringEnd()
+        self.pattern = (expression | declaration | ignore | StringEnd())
         self.pattern.ignore(cppStyleComment)
 
     def parse(self, string):
@@ -150,7 +150,7 @@ class AbaqusParser:
         except ParseException,err:
             self.simulation.error = "Parse error: %s" % (string.strip())
             self.simulation.error_details = err
-            return False
+            # return False
 
         return True
 
