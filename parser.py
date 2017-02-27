@@ -83,10 +83,11 @@ class AbaqusParser:
             print '               ' + ' '*loc + '^'
 
         term = (
+            (atom + ZeroOrMore(mulop + expr)) |
             atom |
-            (atom + mulop + expr) |
             (lpar + expr + rpar)
         )
+        term.setName("term")
 
         expr << (
                 (term + ZeroOrMore(addop + expr)).setParseAction(self.add_expr) |
@@ -180,7 +181,10 @@ class AbaqusParser:
         #              is a time series type.
         varname = toks[0]
         var = self.simulation.get_var(varname)
-        time_offset = toks[1]
+        if len(toks) > 1:
+            time_offset = toks[1]
+        else:
+            time_offset = 0
         ref = Reference(varname, var, int(time_offset))
         return ref
 
